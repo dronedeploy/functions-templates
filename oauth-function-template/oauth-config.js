@@ -95,17 +95,17 @@ const SCHEMA = {
 module.exports.createConfig = (configuration) => {
   const config = convict(SCHEMA);
   config.load(configuration);
-  let clientIdKey = _.get(config, 'credentialKeys.clientId', 'CLIENT_ID');
-  if (!(process.env.get(clientIdKey))) {
+  let clientIdKey = config.has('credentialKeys.clientId') ? config.get('credentialKeys.clientId') : 'CLIENT_ID';
+  if (!(_.get(process.env, clientIdKey))) {
     throw new Error(`${clientIdKey} environment variable not set`);
   }
-  let clientSecretKey = _.get(config, 'credentialKeys.clientSecret', 'CLIENT_SECRET');
-  if (!(process.env.get(clientSecretKey))) {
+  let clientSecretKey = config.has('credentialKeys.clientSecret') ? config.get('credentialKeys.clientSecret') : 'CLIENT_SECRET';
+  if (!(_.get(process.env, clientSecretKey))) {
     throw new Error(`${clientSecretKey} environment variable not set`);
   }
 
-  config.set('credentials.client.id', process.env.get(clientIdKey));
-  config.set('credentials.client.secret', process.env.get(clientSecretKey));
+  config.set('credentials.client.id', _.get(process.env, clientIdKey));
+  config.set('credentials.client.secret', _.get(process.env, clientSecretKey));
 
   if (config.get('callbackUrl')) {
     // This formats the callback url dynamically based on the deployed function
