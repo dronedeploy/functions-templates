@@ -1,5 +1,6 @@
 const convict = require('convict');
 const stringFormat = require('string-format');
+const _ = require('lodash');
 
 // Define a schema
 const SCHEMA = {
@@ -77,21 +78,34 @@ const SCHEMA = {
       default: undefined
     }
   },
+  credentialKeys: {
+    clientId: {
+      doc: "Client ID key to match from ENV variables",
+      format: String,
+      default: undefined
+    },
+    clientSecret: {
+      doc: "Client Secret key to match from ENV variables",
+      format: String,
+      default: undefined
+    },
+  }
 };
 
 module.exports.createConfig = (configuration) => {
   const config = convict(SCHEMA);
   config.load(configuration);
-
-  if (!(process.env.CLIENT_ID)) {
-    throw new Error('CLIENT_ID environment variable not set');
+  let clientIdKey = _.get(config, 'credentialKeys.clientId', 'CLIENT_ID');
+  if (!(process.env.get(clientIdKey))) {
+    throw new Error(`${clientIdKey} environment variable not set`);
   }
-  if (!(process.env.CLIENT_SECRET)) {
-    throw new Error('CLIENT_SECRET environment variable not set');
+  let clientSecretKey = _.get(config, 'credentialKeys.clientSecret', 'CLIENT_SECRET');
+  if (!(process.env.get(clientSecretKey))) {
+    throw new Error(`${clientSecretKey} environment variable not set`);
   }
 
-  config.set('credentials.client.id', process.env.CLIENT_ID);
-  config.set('credentials.client.secret', process.env.CLIENT_SECRET);
+  config.set('credentials.client.id', process.env.get(clientIdKey));
+  config.set('credentials.client.secret', process.env.get(clientSecretKey));
 
   if (config.get('callbackUrl')) {
     // This formats the callback url dynamically based on the deployed function
