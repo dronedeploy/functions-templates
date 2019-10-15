@@ -29,6 +29,6 @@ empty then for each `/refresh` request this url is called. Field `accessToken` s
 `Forbidden` status, then appropriate `OAuth Table` is cleaned up in the same way as the user
  logging out.
  
-The `credentialsKey` parameter is optional parameter, which is used to store custom credentials keys,
+The `credentialKeys` parameter is optional parameter, which is used to store custom credentials keys,
 which are set into oauth2 `client.id` and `client.secret`. If missing default values (`CLIENT_ID`, `CLIENT_SECRET`) 
 are applied. If keys are defined for specific settings, the Environment variables with given keys, should be provided.

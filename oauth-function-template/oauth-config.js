@@ -78,7 +78,7 @@ const SCHEMA = {
       default: undefined
     }
   },
-  credentialsKey: {
+  credentialKeys: {
     clientId: {
       doc: "Client ID key to match from ENV variables",
       format: String,
@@ -95,8 +95,8 @@ const SCHEMA = {
 module.exports.createConfig = (configuration) => {
   const config = convict(SCHEMA);
   config.load(configuration);
-  let clientIdKey = _.get(config, 'credentialsKey.clientId', 'CLIENT_ID');
-  let clientSecretKey = _.get(config, 'credentialsKey.clientSecret', 'CLIENT_SECRET');
+  let clientIdKey = _.get(config, 'credentialKeys.clientId', 'CLIENT_ID');
+  let clientSecretKey = _.get(config, 'credentialKeys.clientSecret', 'CLIENT_SECRET');
   if (!(process.env.get(clientIdKey))) {
     throw new Error(`${clientIdKey} environment variable not set`);
   }
