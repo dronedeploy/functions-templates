@@ -96,10 +96,10 @@ module.exports.createConfig = (configuration) => {
   const config = convict(SCHEMA);
   config.load(configuration);
   let clientIdKey = _.get(config, 'credentialKeys.clientId', 'CLIENT_ID');
-  let clientSecretKey = _.get(config, 'credentialKeys.clientSecret', 'CLIENT_SECRET');
   if (!(process.env.get(clientIdKey))) {
     throw new Error(`${clientIdKey} environment variable not set`);
   }
+  let clientSecretKey = _.get(config, 'credentialKeys.clientSecret', 'CLIENT_SECRET');
   if (!(process.env.get(clientSecretKey))) {
     throw new Error(`${clientSecretKey} environment variable not set`);
   }
