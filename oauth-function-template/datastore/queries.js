@@ -57,7 +57,7 @@ let ACCESS_TOKEN_COLUMN = {
   input: {
     columnType: "TEXT",
     name: "accessToken",
-    textLength: 1024,
+    textLength: 4096,
     textEncrypted: true,
     description: "Holds the current access token"
   }
@@ -75,7 +75,7 @@ let REFRESH_TOKEN_COLUMN = {
   input: {
     columnType: "TEXT",
     name: "refreshToken",
-    textLength: 512,
+    textLength: 4096,
     textEncrypted: true,
     description: "Holds the current refresh token"
   }
