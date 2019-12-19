@@ -1,6 +1,6 @@
 {
   "name": "@dronedeploy/oauth-function-template",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Function template providing configurable OAuth 2.0 support for Dronedeploy Functions",
   "homepage": "https://github.com/dronedeploy/oauth-function-template",
   "repository": {
@@ -10,7 +10,7 @@
   "license": "MIT",
   "main": "index.js",
   "dependencies": {
-    "@dronedeploy/function-wrapper": "^1.2.3",
+    "@dronedeploy/function-wrapper": "1.1.6",
     "convict": "4.2.0",
     "lodash": "^4.17.15",
     "node-fetch": "^2.6.0",
