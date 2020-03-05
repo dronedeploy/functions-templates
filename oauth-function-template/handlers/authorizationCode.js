@@ -9,7 +9,7 @@ exports.initHandler = function(config) {
   provider.callbackUrl = config.get('callbackUrl');
   provider.credentials = config.get('credentials');
   provider.authorizeUrl = config.get('authorizeUrl');
-  provider.innerAuthorizationUrl = config.get('innerAuthorizationUrl');
+  provider.innerAuthorization = config.get('innerAuthorization');
   oauth2 = oauth2.create(provider.credentials);
 
   return {
@@ -35,12 +35,16 @@ const refreshHandler = (req, res, ctx) => {
             }
             return res.status(500).send(packageError(result));
           }
-          const url = provider.innerAuthorizationUrl;
+          const url = provider.innerAuthorization && provider.innerAuthorization.url;
           if (url && !!result.data.accessToken) {
               return getInnerAuthorizationResponse(url, result.data.accessToken)
                   .then((isOkStatus) => {
                       if (!isOkStatus) {
-                          accessTokensTable.editRow(storageTokenInfo.externalId, emptyToken);
+                          const eraseCredentials = provider.innerAuthorization && provider.innerAuthorization.eraseCredentials;
+                          const replaceableToken = eraseCredentials ?
+                              emptyTokenWithErrorCode(errorCodes.INNER_AUTHORIZATION_FAILED) :
+                              oldTokenWithErrorCode(result.data, errorCodes.INNER_AUTHORIZATION_FAILED);
+                          accessTokensTable.editRow(storageTokenInfo.externalId, replaceableToken);
                           return res.status(204).send();
                       } else {
                         return getStandardAuthorizationResponse(res, result, accessTokensTable, storageTokenInfo);
@@ -257,7 +261,7 @@ const logoutHandler = (req, res, ctx) => {
       const accessTokensTable = ctx.datastore.table(tableId);
       const storageTokenInfo = getStorageTokenInfo(req, ctx);
 
-      return accessTokensTable.editRow(storageTokenInfo.externalId, emptyToken)
+      return accessTokensTable.editRow(storageTokenInfo.externalId, emptyTokenWithErrorCode(errorCodes.LOG_OUT))
         .then((result) => {
           if (!result.ok) {
             return res.status(500).send(createErrorHtml(result.errors[0]));
@@ -265,6 +269,11 @@ const logoutHandler = (req, res, ctx) => {
           return res.status(200).send(generateCallbackHtml({}));
         });
     });
+};
+
+const errorCodes = {
+  INNER_AUTHORIZATION_FAILED: 0,
+  LOG_OUT: 1,
 };
 
 
@@ -275,3 +284,15 @@ const emptyToken = {
   access_expires_at: new Date().toISOString(),
   refreshToken: ""
 };
+
+const emptyTokenWithErrorCode = (errorCode) => ({
+    accessToken: "",
+    access_expires_at: new Date().toISOString(),
+    errorCode: errorCode,
+    refreshToken: "",
+});
+
+const oldTokenWithErrorCode = (oldValue, errorCode) => ({
+    ...oldValue,
+    errorCode: errorCode,
+});

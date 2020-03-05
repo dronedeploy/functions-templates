@@ -57,7 +57,7 @@ const getOAuthTableColumnsToCreate = (ctx, tableId) => {
       switch (columnsResult.length) {
         case 0:
           return queries.tableColumns;
-        case 3:
+        case 4:
           return [];
         default:
           return getMissingColumns(columnsResult);

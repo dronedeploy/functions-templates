@@ -81,10 +81,20 @@ let REFRESH_TOKEN_COLUMN = {
   }
 };
 
+let ERROR_CODE_COLUMN = {
+  input: {
+    columnType: "TEXT",
+    name: "errorCode",
+    textLength: 4096,
+    description: "Holds the latest error code"
+  }
+};
+
 let TABLE_COLUMNS = [
   ACCESS_TOKEN_COLUMN,
   TOKEN_EXPIRATION_COLUMN,
-  REFRESH_TOKEN_COLUMN
+  REFRESH_TOKEN_COLUMN,
+  ERROR_CODE_COLUMN,
 ];
 
 module.exports = {

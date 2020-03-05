@@ -66,10 +66,17 @@ const SCHEMA = {
       default: undefined
     }
   },
-  innerAuthorizationUrl: {
-    doc: "Fully qualified url for inner authorization request made during refresh",
-    format: String,
-    default: undefined
+  innerAuthorization: {
+    url: {
+      doc: "Fully qualified url for inner authorization request made during refresh",
+      format: String,
+      default: undefined
+    },
+    eraseCredentials: {
+      doc: "Whether or not the Basic Authorization header should be sent at the token request",
+      format: "Boolean",
+      default: undefined
+    },
   },
   tokenConfig: {
     scope: {
