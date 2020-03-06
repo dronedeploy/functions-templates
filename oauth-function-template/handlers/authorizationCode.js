@@ -31,8 +31,10 @@ const refreshHandler = (req, res, ctx) => {
         .then((result) => {
           if (!result.ok) {
             if (couldNotFindData(result)) {
+              console.log('User is not signed in - queried OAuth table row does not exist');
               return res.status(401).send(packageError(result));
             }
+            console.error(`An error occurred during oauth table row retrieval: ${JSON.stringify(result.errors)}`);
             return res.status(500).send(packageError(result));
           }
           const url = provider.innerAuthorizationUrl;
@@ -40,9 +42,13 @@ const refreshHandler = (req, res, ctx) => {
               return getInnerAuthorizationResponse(url, result.data.accessToken)
                   .then((isOkStatus) => {
                       if (!isOkStatus) {
+                          console.warn(
+                            'The access token is invalid - removing access token in a related datastore row'
+                          );
                           accessTokensTable.editRow(storageTokenInfo.externalId, emptyToken);
                           return res.status(204).send();
                       } else {
+                        console.log('Access token is valid - proceeding.');
                         return getStandardAuthorizationResponse(res, result, accessTokensTable, storageTokenInfo);
                       }
                   });
@@ -60,22 +66,26 @@ const getInnerAuthorizationResponse = (url, accessToken) => {
             'Content-Type': 'application/json',
         }
     };
-    console.info(`Making request: 'GET' ${url}`);
+    console.info(`Making a check if the access token is still valid by doing a request: GET ${url}`);
     return fetch(url, options)
         .then((res) => {
             return res.ok;
         })
         .catch((error) => {
-                console.info({error});
+                console.error('An error during checking if access token is still valid occured.', error);
                 return false;
         });
 };
 
 const getStandardAuthorizationResponse = (res, result, accessTokensTable, storageTokenInfo) => {
     if (isAccessTokenValidForever(result.data)) {
+        console.log('Related access token is valid forever - no refresh required.');
         return res.status(200).send();
     }
+    console.log(`Related access token expires at: ${result.data.access_expires_at}`);
+
     if (isEmptyToken(result.data)) {
+        console.log('User needs to sign in - access token is empty in a related datastore row');
         return res.status(204).send();
     }
 
@@ -91,24 +101,28 @@ const getStandardAuthorizationResponse = (res, result, accessTokensTable, storag
     // We preemptively refresh the token to avoid sending a token back
     // to the client that may expire very soon
     if (doesTokenNeedRefresh(accessTokenObj.token)) {
-        console.log("Refreshing token");
+        console.log("Refreshing token as it is expired or will be expired soon.");
         return accessTokenObj.refresh()
             .then((refreshResult) => {
-                console.log("Refresh success - returning new token");
+                console.log("Refresh success");
                 return storeTokenData(accessTokensTable, storageTokenInfo, refreshResult.token, res);
             })
             .catch((err) => {
-                console.log({err});
+                console.error('Access token refresh failed', err);
                 return res.status(401).send(packageError('The authorization code/refresh token is expired or invalid/redirect_uri must have the same value as in the authorization request.'));
             });
     }
 
-    // No refresh needed, return token like normal
+    console.log(`No refresh required as the access token is not going to expire soon.`);
+    console.log(`${storageTokenInfo.returnTokenBack ? '' : 'Not'} returning access token in the response`);
     return res.status(200).send(storageTokenInfo.returnTokenBack ? tokenData.access_token : '');
 };
 
 const getStorageTokenInfo = (req, ctx) => {
   const isServiceAccount = req.query.service_account === 'true';
+  console.log(
+    isServiceAccount ? 'Service account access token requested' : 'Non-service account access token requested'
+  );
   return {
     externalId: isServiceAccount ? SERVICE_ACCOUNT_EXTERNAL_KEY : ctx.token.username,
     returnTokenBack: !isServiceAccount,
