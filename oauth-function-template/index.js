@@ -39,6 +39,7 @@ const parseConfig = function (configuration) {
 
 const handler = function(paths) {
   return (req, res) => {
+    console.log(`Request received to endpoint: ${req.method} ${req.originalUrl}`);
     if (!global.APP_ID) {
       const msg = 'App ID not available, did you deploy using DroneDeploy-CLI?';
       console.error(msg);
