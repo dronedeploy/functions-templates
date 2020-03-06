@@ -121,7 +121,7 @@ const getStandardAuthorizationResponse = (res, result, accessTokensTable, storag
 const getStorageTokenInfo = (req, ctx) => {
   const isServiceAccount = req.query.service_account === 'true';
   console.log(
-    isServiceAccount ? 'Service account access token requested' : 'Non-service account access token requested'
+    isServiceAccount ? 'Received request is for Service account' : 'Received request is for non-service account'
   );
   return {
     externalId: isServiceAccount ? SERVICE_ACCOUNT_EXTERNAL_KEY : ctx.token.username,
@@ -194,13 +194,13 @@ const oauth2CallbackHandler = (req, res, ctx) => {
     redirect_uri: provider.callbackUrl
   };
 
-  // Save the access token
   return oauth2.authorizationCode.getToken(tokenConfig)
     .then((result) => {
+      console.log('Successfuly produced oauth token from authorization code - returning callback html');
       return res.status(200).send(generateCallbackHtml(oauth2.accessToken.create(result).token));
     })
     .catch((error) => {
-      console.log('OAuth Callback Error', error.message);
+      console.log('Failure on producing oauth token from authorization code - returning error html ', error.message);
       return res.status(500).send(createErrorHtml(error.message));
     });
 };
@@ -208,18 +208,23 @@ const oauth2CallbackHandler = (req, res, ctx) => {
 const storeTokenHandler = (req, res, ctx) => {
   // Make sure this is called with the proper method
   if (req.method !== 'POST' && req.method !== 'PUT') {
+    console.warn(`Invalid http method: ${req.method} - returning 400`);
     return res.status(400).send(packageError('Invalid request method - please use POST or PUT'));
   }
 
   if (!req.body) {
-    return res.status(400).send(packageError('Missing request body'));
+    const message = 'Missing request body';
+    console.warn(message);
+    return res.status(400).send(packageError(message));
   }
 
   const parsed = JSON.parse(req.body);
 
   // Make sure user has passed correct data parameter
   if (!parsed.token) {
-    return res.status(400).send(packageError('Missing token body in request'));
+    const message = 'Missing token body in request';
+    console.warn(message);
+    return res.status(400).send(packageError(message));
   }
 
   const storageTokenInfo = getStorageTokenInfo(req, ctx);
@@ -231,6 +236,7 @@ const storeTokenHandler = (req, res, ctx) => {
 
       // we store the access token data by associating
       // it with the user on the function jwt auth token
+      console.log('Saving token in datastore');
       return storeTokenData(accessTokensTable, storageTokenInfo, parsed.token, res);
     })
     .catch((error) => {
@@ -271,11 +277,14 @@ const logoutHandler = (req, res, ctx) => {
       const accessTokensTable = ctx.datastore.table(tableId);
       const storageTokenInfo = getStorageTokenInfo(req, ctx);
 
+      console.log('Signing out user - setting related OAuth table row to an empty token');
       return accessTokensTable.editRow(storageTokenInfo.externalId, emptyToken)
         .then((result) => {
           if (!result.ok) {
+            console.error(`Error on setting empty token: ${JSON.stringify(result.errors)} - returinng error html`);
             return res.status(500).send(createErrorHtml(result.errors[0]));
           }
+          console.log('Sign out successful');
           return res.status(200).send(generateCallbackHtml({}));
         });
     });
