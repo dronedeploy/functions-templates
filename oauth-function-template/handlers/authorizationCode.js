@@ -282,7 +282,7 @@ const logoutHandler = (req, res, ctx) => {
       return accessTokensTable.editRow(storageTokenInfo.externalId, emptyToken)
         .then((result) => {
           if (!result.ok) {
-            console.error(`Error on setting empty token: ${JSON.stringify(result.errors)} - returinng error html`);
+            console.error(`Error on setting empty token: ${JSON.stringify(result.errors)} - returning error html`);
             return res.status(500).send(createErrorHtml(result.errors[0]));
           }
           console.log('Sign out successful');
