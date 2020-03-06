@@ -12,6 +12,7 @@ const _createOAuthTableIfNotExists = (ctx) => {
   return ctx.graphql.query(queries.findTableQuery)
       .then((result) => {
         if (result.errors && result.data.node.table === null) {
+          console.log('Creating OAuth table as it does not exist');
           return _createOAuthTable(ctx)
             .then((tableIdResult) => {
               return createOAuthTableColumns(ctx, tableIdResult);
