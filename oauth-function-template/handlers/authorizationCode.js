@@ -176,6 +176,7 @@ const storeTokenData = (table, storageTokenInfo, tokenData, res) => {
       throw new Error(JSON.stringify(rowData.errors[0]));
     }
 
+    console.log(storageTokenInfo.returnTokenBack ? 'Returning new token' : 'Not returning new token')
     return res.status(200).send(storageTokenInfo.returnTokenBack ? accessTokenObj.token : '');
   });
 };
