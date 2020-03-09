@@ -1,6 +1,7 @@
 let oauth2 = require('simple-oauth2');
 const tableUtils = require('../datastore/table');
 let fetch = require('node-fetch');
+let _ = require('lodash');
 
 const provider = {};
 const SERVICE_ACCOUNT_EXTERNAL_KEY = 'serviceAccount';
@@ -35,12 +36,12 @@ const refreshHandler = (req, res, ctx) => {
             }
             return res.status(500).send(packageError(result));
           }
-          const url = provider.innerAuthorization && provider.innerAuthorization.url;
+          const url = (provider.innerAuthorization && provider.innerAuthorization.url) || provider.innerAuthorizationUrl;
           if (url && !!result.data.accessToken) {
               return getInnerAuthorizationResponse(url, result.data.accessToken)
                   .then((isOkStatus) => {
                       if (!isOkStatus) {
-                          const eraseCredentials = provider.innerAuthorization && provider.innerAuthorization.eraseCredentials;
+                          const eraseCredentials = _.has(provider, 'innerAuthorization.eraseCredentials') ? provider.innerAuthorization.eraseCredentials : true;
                           const replaceableToken = eraseCredentials ?
                               emptyTokenWithErrorCode(errorCodes.INNER_AUTHORIZATION_FAILED) :
                               oldTokenWithErrorCode(result.data, errorCodes.INNER_AUTHORIZATION_FAILED);
