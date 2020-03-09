@@ -15,10 +15,12 @@ const _createOAuthTableIfNotExists = (ctx) => {
           console.log('Creating OAuth table as it does not exist');
           return _createOAuthTable(ctx)
             .then((tableIdResult) => {
+              console.log('Created OAuth table without columns');
               return createOAuthTableColumns(ctx, tableIdResult);
             });
         }
 
+        console.log('OAuth table exists - no need to create one.');
         return result.data.node.table.id;
       });
 };
@@ -67,7 +69,7 @@ const getOAuthTableColumnsToCreate = (ctx, tableId) => {
 };
 
 const createOAuthTableColumns = (ctx, tableId) => {
-
+  console.log('Creating OAuth table columns');
   return getOAuthTableColumnsToCreate(ctx, tableId)
     .then((columns) => {
       // This really shouldn't ever happen, but if it does
@@ -85,8 +87,9 @@ const createOAuthTableColumns = (ctx, tableId) => {
       return Promise.all(tableColumnQueries)
         .then((results) => {
           if (results.some(resultContainsError)) {
-            return Promise.reject('Error creating table columns');
+            return Promise.reject('Error creating OAuth table columns');
           }
+          console.log('OAuth Table columns created');
           return tableId;
         });
     });
