@@ -30,9 +30,15 @@ class ClientCredentialsHandler {
           .then((row) => {
             const needRefresh = !row.ok || this.doesTokenNeedRefresh(row.data);
             if (needRefresh) {
+              console.log('Client credentials token needs to be refreshed - refreshing.');
               return this.refreshClientCredentials(this.tokenConfig)
-                .then((tokenObj) => this.storeClientCredentialsToken(table, tokenObj));
+                .then((tokenObj) => this.storeClientCredentialsToken(table, tokenObj))
+                .then((result) => {
+                  console.log('Client credentials token refreshed.');
+                  return result;
+                });
             }
+            console.log('Client credentials are fresh - no need to refresh.');
             return Promise.resolve();
           })
           .then(() => res.status(200).send());
