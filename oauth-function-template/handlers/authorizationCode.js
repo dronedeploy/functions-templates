@@ -6,6 +6,10 @@ const _ = require('lodash');
 const provider = {};
 const SERVICE_ACCOUNT_EXTERNAL_KEY = 'serviceAccount';
 
+const ERROR_CODES = {
+    INNER_AUTHORIZATION_FAILED: { code: 0, message: 'Inner Authorization Failed' },
+};
+
 exports.initHandler = function(config) {
   provider.callbackUrl = config.get('callbackUrl');
   provider.credentials = config.get('credentials');
@@ -48,10 +52,10 @@ const refreshHandler = (req, res, ctx) => {
                           );
                           const removeCredentials = _.get(provider, 'innerAuthorization.removeCredentials', true);
                           const replaceableToken = removeCredentials ?
-                              emptyTokenWithErrorCode(errorCodes.INNER_AUTHORIZATION_FAILED.code) :
-                              oldTokenWithErrorCode(result.data, errorCodes.INNER_AUTHORIZATION_FAILED.code);
+                              emptyTokenWithErrorCode(ERROR_CODES.INNER_AUTHORIZATION_FAILED.code) :
+                              oldTokenWithErrorCode(result.data, ERROR_CODES.INNER_AUTHORIZATION_FAILED.code);
                           accessTokensTable.editRow(storageTokenInfo.externalId, replaceableToken);
-                          return res.status(204).send(errorCodes.INNER_AUTHORIZATION_FAILED);
+                          return res.status(204).send(ERROR_CODES.INNER_AUTHORIZATION_FAILED);
                       } else {
                         console.log('Access token is valid - proceeding.');
                         return getStandardAuthorizationResponse(res, result, accessTokensTable, storageTokenInfo);
@@ -296,11 +300,6 @@ const logoutHandler = (req, res, ctx) => {
         });
     });
 };
-
-const errorCodes = {
-  INNER_AUTHORIZATION_FAILED: { code: 0, message: 'Inner Authorization Failed' },
-};
-
 
 // Blank tokens and current date (needed for date column validation)
 // for use with logout
