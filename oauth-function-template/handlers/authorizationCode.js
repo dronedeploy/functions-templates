@@ -32,8 +32,10 @@ const refreshHandler = (req, res, ctx) => {
         .then((result) => {
           if (!result.ok) {
             if (couldNotFindData(result)) {
+              console.log('User is not signed in - queried OAuth table row does not exist');
               return res.status(401).send(packageError(result));
             }
+            console.error(`An error occurred during oauth table row retrieval: ${JSON.stringify(result.errors)}`);
             return res.status(500).send(packageError(result));
           }
           const url = (provider.innerAuthorization && provider.innerAuthorization.url) || provider.innerAuthorizationUrl;
@@ -41,6 +43,9 @@ const refreshHandler = (req, res, ctx) => {
               return getInnerAuthorizationResponse(url, result.data.accessToken)
                   .then((isOkStatus) => {
                       if (!isOkStatus) {
+                          console.warn(
+                            'The access token is invalid - removing access token in a related datastore row'
+                          );
                           const removeCredentials = _.get(provider, 'innerAuthorization.removeCredentials', true);
                           const replaceableToken = removeCredentials ?
                               emptyTokenWithErrorCode(errorCodes.INNER_AUTHORIZATION_FAILED.code) :
@@ -48,6 +53,7 @@ const refreshHandler = (req, res, ctx) => {
                           accessTokensTable.editRow(storageTokenInfo.externalId, replaceableToken);
                           return res.status(204).send(errorCodes.INNER_AUTHORIZATION_FAILED);
                       } else {
+                        console.log('Access token is valid - proceeding.');
                         return getStandardAuthorizationResponse(res, result, accessTokensTable, storageTokenInfo);
                       }
                   });
@@ -65,22 +71,26 @@ const getInnerAuthorizationResponse = (url, accessToken) => {
             'Content-Type': 'application/json',
         }
     };
-    console.info(`Making request: 'GET' ${url}`);
+    console.info(`Making a check if the access token is still valid by doing a request: GET ${url}`);
     return fetch(url, options)
         .then((res) => {
             return res.ok;
         })
         .catch((error) => {
-                console.info({error});
+                console.error('An error during checking if access token is still valid occured.', error);
                 return false;
         });
 };
 
 const getStandardAuthorizationResponse = (res, result, accessTokensTable, storageTokenInfo) => {
     if (isAccessTokenValidForever(result.data)) {
+        console.log('Related access token is valid forever - no refresh required.');
         return res.status(200).send();
     }
+    console.log(`Related access token expires at: ${result.data.access_expires_at}`);
+
     if (isEmptyToken(result.data)) {
+        console.log('User needs to sign in - access token is empty in a related datastore row');
         return res.status(204).send();
     }
 
@@ -96,24 +106,28 @@ const getStandardAuthorizationResponse = (res, result, accessTokensTable, storag
     // We preemptively refresh the token to avoid sending a token back
     // to the client that may expire very soon
     if (doesTokenNeedRefresh(accessTokenObj.token)) {
-        console.log("Refreshing token");
+        console.log("Refreshing token as it is expired or will be expired soon.");
         return accessTokenObj.refresh()
             .then((refreshResult) => {
-                console.log("Refresh success - returning new token");
+                console.log("Refresh success");
                 return storeTokenData(accessTokensTable, storageTokenInfo, refreshResult.token, res);
             })
             .catch((err) => {
-                console.log({err});
+                console.error('Access token refresh failed', err);
                 return res.status(401).send(packageError('The authorization code/refresh token is expired or invalid/redirect_uri must have the same value as in the authorization request.'));
             });
     }
 
-    // No refresh needed, return token like normal
+    console.log(`No refresh required as the access token is not going to expire soon.`);
+    console.log(`${storageTokenInfo.returnTokenBack ? '' : 'Not'} returning access token in the response`);
     return res.status(200).send(storageTokenInfo.returnTokenBack ? tokenData.access_token : '');
 };
 
 const getStorageTokenInfo = (req, ctx) => {
   const isServiceAccount = req.query.service_account === 'true';
+  console.log(
+    isServiceAccount ? 'Received request is for Service account' : 'Received request is for non-service account'
+  );
   return {
     externalId: isServiceAccount ? SERVICE_ACCOUNT_EXTERNAL_KEY : ctx.token.username,
     returnTokenBack: !isServiceAccount,
@@ -168,6 +182,7 @@ const storeTokenData = (table, storageTokenInfo, tokenData, res) => {
       throw new Error(JSON.stringify(rowData.errors[0]));
     }
 
+    console.log(storageTokenInfo.returnTokenBack ? 'Returning new token' : 'Not returning new token')
     return res.status(200).send(storageTokenInfo.returnTokenBack ? accessTokenObj.token : '');
   });
 };
@@ -186,13 +201,13 @@ const oauth2CallbackHandler = (req, res, ctx) => {
     redirect_uri: provider.callbackUrl
   };
 
-  // Save the access token
   return oauth2.authorizationCode.getToken(tokenConfig)
     .then((result) => {
+      console.log('Successfuly produced oauth token from authorization code - returning callback html');
       return res.status(200).send(generateCallbackHtml(oauth2.accessToken.create(result).token));
     })
     .catch((error) => {
-      console.log('OAuth Callback Error', error.message);
+      console.log('Failure on producing oauth token from authorization code - returning error html ', error.message);
       return res.status(500).send(createErrorHtml(error.message));
     });
 };
@@ -200,18 +215,23 @@ const oauth2CallbackHandler = (req, res, ctx) => {
 const storeTokenHandler = (req, res, ctx) => {
   // Make sure this is called with the proper method
   if (req.method !== 'POST' && req.method !== 'PUT') {
+    console.warn(`Invalid http method: ${req.method} - returning 400`);
     return res.status(400).send(packageError('Invalid request method - please use POST or PUT'));
   }
 
   if (!req.body) {
-    return res.status(400).send(packageError('Missing request body'));
+    const message = 'Missing request body';
+    console.warn(message);
+    return res.status(400).send(packageError(message));
   }
 
   const parsed = JSON.parse(req.body);
 
   // Make sure user has passed correct data parameter
   if (!parsed.token) {
-    return res.status(400).send(packageError('Missing token body in request'));
+    const message = 'Missing token body in request';
+    console.warn(message);
+    return res.status(400).send(packageError(message));
   }
 
   const storageTokenInfo = getStorageTokenInfo(req, ctx);
@@ -223,6 +243,7 @@ const storeTokenHandler = (req, res, ctx) => {
 
       // we store the access token data by associating
       // it with the user on the function jwt auth token
+      console.log('Saving token in datastore');
       return storeTokenData(accessTokensTable, storageTokenInfo, parsed.token, res);
     })
     .catch((error) => {
@@ -263,11 +284,14 @@ const logoutHandler = (req, res, ctx) => {
       const accessTokensTable = ctx.datastore.table(tableId);
       const storageTokenInfo = getStorageTokenInfo(req, ctx);
 
+      console.log('Signing out user - setting related OAuth table row to an empty token');
       return accessTokensTable.editRow(storageTokenInfo.externalId, emptyTokenWithErrorCode())
         .then((result) => {
           if (!result.ok) {
+            console.error(`Error on setting empty token: ${JSON.stringify(result.errors)} - returning error html`);
             return res.status(500).send(createErrorHtml(result.errors[0]));
           }
+          console.log('Sign out successful');
           return res.status(200).send(generateCallbackHtml({}));
         });
     });
