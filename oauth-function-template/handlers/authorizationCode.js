@@ -158,6 +158,7 @@ const storeTokenData = (table, storageTokenInfo, tokenData, res) => {
   return table.upsertRow(storageTokenInfo.externalId, {
     accessToken: accessTokenObj.token.access_token,
     access_expires_at: accessTokenObj.token.expires_at,
+    errorCode: null,
     refreshToken: accessTokenObj.token.refresh_token}
   ).then((rowData) => {
     if (!rowData.ok) {
@@ -272,19 +273,13 @@ const logoutHandler = (req, res, ctx) => {
 };
 
 const errorCodes = {
-  INNER_AUTHORIZATION_FAILED: 0,
-  LOG_OUT: 1,
+  INNER_AUTHORIZATION_FAILED: 'INNER_AUTHORIZATION_FAILED',
+  LOG_OUT: 'LOG_OUT',
 };
 
 
 // Blank tokens and current date (needed for date column validation)
 // for use with logout
-const emptyToken = {
-  accessToken: "",
-  access_expires_at: new Date().toISOString(),
-  refreshToken: ""
-};
-
 const emptyTokenWithErrorCode = (errorCode) => ({
     accessToken: "",
     access_expires_at: new Date().toISOString(),

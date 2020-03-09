@@ -50,6 +50,7 @@ class ClientCredentialsHandler {
       .then((accessToken) => ({
         accessToken: accessToken.token.access_token,
         access_expires_at: accessToken.token.expires_at,
+        errorCode: null,
         refreshToken: ''
       }));
   }
