@@ -27,8 +27,8 @@ service used within outer service is accessible with stored `accessToken`. If th
 empty then for each `/refresh` request the `innerAuthorization.url` is called. Field `accessToken` stored in 
 `OAuth Table` is used as authorization token, if given. If url response give back `Unauthorized` or 
 `Forbidden` status, then 
- - appropriate `OAuth Table` got `errorCode = INNER_AUTHORIZATION_FAILED`
- - if additionally `innerAuhtorization.eraseCredentails` is given and set to `true` then appropriate
+ - appropriate `OAuth Table` got `errorCode = INNER_AUTHORIZATION_FAILED.code`
+ - if additionally `innerAuhtorization.removeCredentials` is given and set to `true` then appropriate
  `OAuth Table` is cleaned up in the same way as the user 
  logging out.
  

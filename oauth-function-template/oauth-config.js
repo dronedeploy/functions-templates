@@ -72,8 +72,8 @@ const SCHEMA = {
       format: String,
       default: undefined
     },
-    eraseCredentials: {
-      doc: "Whether or not tokens should be erased in case of inner authorization failure",
+    removeCredentials: {
+      doc: "Whether or not tokens should be removed in case of inner authorization failure",
       format: "Boolean",
       default: undefined
     },

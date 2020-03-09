@@ -83,9 +83,8 @@ let REFRESH_TOKEN_COLUMN = {
 
 let ERROR_CODE_COLUMN = {
   input: {
-    columnType: "TEXT",
+    columnType: "NUMBER",
     name: "errorCode",
-    textLength: 4096,
     description: "Holds the latest error code"
   }
 };
