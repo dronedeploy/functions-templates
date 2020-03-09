@@ -73,7 +73,7 @@ const SCHEMA = {
       default: undefined
     },
     eraseCredentials: {
-      doc: "Whether or not the Basic Authorization header should be sent at the token request",
+      doc: "Whether or not tokens should be erased in case of inner authorization failure",
       format: "Boolean",
       default: undefined
     },
