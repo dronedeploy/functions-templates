@@ -38,7 +38,7 @@ const refreshHandler = (req, res, ctx) => {
             console.error(`An error occurred during oauth table row retrieval: ${JSON.stringify(result.errors)}`);
             return res.status(500).send(packageError(result));
           }
-          const url = (provider.innerAuthorization && provider.innerAuthorization.url) || provider.innerAuthorizationUrl;
+          const url = _.get(provider, 'innerAuthorization.url') || _.get(provider, 'innerAuthorizationUrl');
           if (url && !!result.data.accessToken) {
               return getInnerAuthorizationResponse(url, result.data.accessToken)
                   .then((isOkStatus) => {
