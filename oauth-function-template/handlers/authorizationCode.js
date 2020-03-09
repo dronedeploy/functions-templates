@@ -1,15 +1,20 @@
 let oauth2 = require('simple-oauth2');
 const tableUtils = require('../datastore/table');
 let fetch = require('node-fetch');
+const _ = require('lodash');
 
 const provider = {};
 const SERVICE_ACCOUNT_EXTERNAL_KEY = 'serviceAccount';
+
+const ERROR_CODES = {
+    INNER_AUTHORIZATION_FAILED: { code: 0, message: 'Inner Authorization Failed' },
+};
 
 exports.initHandler = function(config) {
   provider.callbackUrl = config.get('callbackUrl');
   provider.credentials = config.get('credentials');
   provider.authorizeUrl = config.get('authorizeUrl');
-  provider.innerAuthorizationUrl = config.get('innerAuthorizationUrl');
+  provider.innerAuthorization = config.get('innerAuthorization');
   oauth2 = oauth2.create(provider.credentials);
 
   return {
@@ -37,7 +42,7 @@ const refreshHandler = (req, res, ctx) => {
             console.error(`An error occurred during oauth table row retrieval: ${JSON.stringify(result.errors)}`);
             return res.status(500).send(packageError(result));
           }
-          const url = provider.innerAuthorizationUrl;
+          const url = _.get(provider, 'innerAuthorization.url') || _.get(provider, 'innerAuthorizationUrl');
           if (url && !!result.data.accessToken) {
               return getInnerAuthorizationResponse(url, result.data.accessToken)
                   .then((isOkStatus) => {
@@ -45,8 +50,12 @@ const refreshHandler = (req, res, ctx) => {
                           console.warn(
                             'The access token is invalid - removing access token in a related datastore row'
                           );
-                          accessTokensTable.editRow(storageTokenInfo.externalId, emptyToken);
-                          return res.status(204).send();
+                          const removeCredentials = _.get(provider, 'innerAuthorization.removeCredentials', true);
+                          const replaceableToken = removeCredentials ?
+                              emptyTokenWithErrorCode(ERROR_CODES.INNER_AUTHORIZATION_FAILED.code) :
+                              oldTokenWithErrorCode(result.data, ERROR_CODES.INNER_AUTHORIZATION_FAILED.code);
+                          accessTokensTable.editRow(storageTokenInfo.externalId, replaceableToken);
+                          return res.status(204).send(ERROR_CODES.INNER_AUTHORIZATION_FAILED);
                       } else {
                         console.log('Access token is valid - proceeding.');
                         return getStandardAuthorizationResponse(res, result, accessTokensTable, storageTokenInfo);
@@ -168,6 +177,7 @@ const storeTokenData = (table, storageTokenInfo, tokenData, res) => {
   return table.upsertRow(storageTokenInfo.externalId, {
     accessToken: accessTokenObj.token.access_token,
     access_expires_at: accessTokenObj.token.expires_at,
+    errorCode: null,
     refreshToken: accessTokenObj.token.refresh_token}
   ).then((rowData) => {
     if (!rowData.ok) {
@@ -279,7 +289,7 @@ const logoutHandler = (req, res, ctx) => {
       const storageTokenInfo = getStorageTokenInfo(req, ctx);
 
       console.log('Signing out user - setting related OAuth table row to an empty token');
-      return accessTokensTable.editRow(storageTokenInfo.externalId, emptyToken)
+      return accessTokensTable.editRow(storageTokenInfo.externalId, emptyTokenWithErrorCode())
         .then((result) => {
           if (!result.ok) {
             console.error(`Error on setting empty token: ${JSON.stringify(result.errors)} - returning error html`);
@@ -291,11 +301,16 @@ const logoutHandler = (req, res, ctx) => {
     });
 };
 
-
 // Blank tokens and current date (needed for date column validation)
 // for use with logout
-const emptyToken = {
-  accessToken: "",
-  access_expires_at: new Date().toISOString(),
-  refreshToken: ""
-};
+const emptyTokenWithErrorCode = (errorCode = null) => ({
+    accessToken: "",
+    access_expires_at: new Date().toISOString(),
+    errorCode,
+    refreshToken: "",
+});
+
+const oldTokenWithErrorCode = (oldValue, errorCode = null) => ({
+    ...oldValue,
+    errorCode,
+});

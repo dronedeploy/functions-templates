@@ -66,10 +66,17 @@ const SCHEMA = {
       default: undefined
     }
   },
-  innerAuthorizationUrl: {
-    doc: "Fully qualified url for inner authorization request made during refresh",
-    format: String,
-    default: undefined
+  innerAuthorization: {
+    url: {
+      doc: "Fully qualified url for inner authorization request made during refresh",
+      format: String,
+      default: undefined
+    },
+    removeCredentials: {
+      doc: "Whether or not tokens should be removed in case of inner authorization failure",
+      format: "Boolean",
+      default: undefined
+    },
   },
   tokenConfig: {
     scope: {
