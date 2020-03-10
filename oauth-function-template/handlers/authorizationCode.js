@@ -35,7 +35,7 @@ const refreshHandler = (req, res, ctx) => {
       return accessTokensTable.getRowByExternalId(storageTokenInfo.externalId)
         .then((result) => {
           if (!result.ok) {
-            if (couldNotFindData(result)) {
+            if (couldNotFindRowData(result)) {
               console.log('User is not signed in - queried OAuth table row does not exist');
               return res.status(401).send(packageError(result));
             }
@@ -138,8 +138,8 @@ const getStorageTokenInfo = (req, ctx) => {
   };
 };
 
-const couldNotFindData = (errResponse) => {
-  return errResponse.errors[0].message.indexOf('Could not find data') !== -1;
+const couldNotFindRowData = (result) => {
+  return !result.errors || result.errors[0].message.includes('Could not find data');
 };
 
 const packageError = (err) => {
