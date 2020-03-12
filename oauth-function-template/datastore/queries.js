@@ -85,6 +85,7 @@ let ERROR_CODE_COLUMN = {
   input: {
     columnType: "NUMBER",
     name: "errorCode",
+    numberType: 'INTEGER',
     description: "Holds the latest error code"
   }
 };
