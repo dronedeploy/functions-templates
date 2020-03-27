@@ -9,3 +9,7 @@ Release 1.6.1
 Release 1.6.2
 - Changes
   - Added fix to create properly new column (errorCode) in `OAuth Table`
+  
+Release 1.7.0
+- Changes
+   - Add optional headers and method to inner Authorization
