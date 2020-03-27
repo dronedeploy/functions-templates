@@ -77,6 +77,16 @@ const SCHEMA = {
       format: "Boolean",
       default: undefined
     },
+    headers: {
+      doc: "Optional headers used to request innerAuthorization.url",
+      format: Object,
+      default: undefined
+    },
+    method: {
+      doc: "Optional http method used to request innerAuthorization.url",
+      format: Object,
+      default: undefined
+    },
   },
   tokenConfig: {
     scope: {

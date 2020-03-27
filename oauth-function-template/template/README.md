@@ -24,7 +24,9 @@ additional fields will be included as query params (`key=value`) for the authori
 
 The `innerAuthorization` parameter is optional parameter, which is used to make sure that inner 
 service used within outer service is accessible with stored `accessToken`. If this field is not
-empty then for each `/refresh` request the `innerAuthorization.url` is called. Field `accessToken` stored in 
+empty then for each `/refresh` request the `innerAuthorization.url` is called (with options: 
+`innerAuthorization.headers` and `innerAuthorization.method` if given or method `GET` otherwise).
+ Field `accessToken` stored in 
 `OAuth Table` is used as authorization token, if given. If url response give back `Unauthorized` or 
 `Forbidden` status, then 
  - appropriate `OAuth Table` got `errorCode = INNER_AUTHORIZATION_FAILED.code`
