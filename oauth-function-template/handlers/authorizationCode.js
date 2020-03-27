@@ -78,7 +78,7 @@ const getInnerAuthorizationResponse = (url, accessToken, headers = {}, method = 
             ...headers,
         }
     };
-    console.info(`Making a check if the access token is still valid by doing a request: GET ${url}`);
+    console.info(`Making a check if the access token is still valid by doing a request: ${method} ${url}`);
     return fetch(url, options)
         .then((res) => {
             return res.ok;

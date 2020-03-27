@@ -84,7 +84,7 @@ const SCHEMA = {
     },
     method: {
       doc: "Optional http method used to request innerAuthorization.url",
-      format: Object,
+      format: String,
       default: undefined
     },
   },
