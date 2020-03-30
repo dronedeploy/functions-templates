@@ -44,7 +44,9 @@ const refreshHandler = (req, res, ctx) => {
           }
           const url = _.get(provider, 'innerAuthorization.url') || _.get(provider, 'innerAuthorizationUrl');
           if (url && !!result.data.accessToken) {
-              return getInnerAuthorizationResponse(url, result.data.accessToken)
+              const headers = _.get(provider, 'innerAuthorization.headers');
+              const method = _.get(provider, 'innerAuthorization.method');
+              return getInnerAuthorizationResponse(url, result.data.accessToken, headers, method)
                   .then((isOkStatus) => {
                       if (!isOkStatus) {
                           console.warn(
@@ -67,15 +69,16 @@ const refreshHandler = (req, res, ctx) => {
     })
 };
 
-const getInnerAuthorizationResponse = (url, accessToken) => {
+const getInnerAuthorizationResponse = (url, accessToken, headers = {}, method = 'GET') => {
     let options = {
-        method: 'GET',
+        method,
         headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
+            ...headers,
         }
     };
-    console.info(`Making a check if the access token is still valid by doing a request: GET ${url}`);
+    console.info(`Making a check if the access token is still valid by doing a request: ${method} ${url}`);
     return fetch(url, options)
         .then((res) => {
             return res.ok;
