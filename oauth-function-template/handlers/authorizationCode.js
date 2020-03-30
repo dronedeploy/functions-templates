@@ -71,7 +71,7 @@ const refreshHandler = (req, res, ctx) => {
 
 const getInnerAuthorizationResponse = (url, accessToken, headers = {}, method = 'GET') => {
     let options = {
-        method: method,
+        method,
         headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
