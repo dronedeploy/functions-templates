@@ -44,25 +44,28 @@ const refreshHandler = (req, res, ctx) => {
           }
           const url = _.get(provider, 'innerAuthorization.url') || _.get(provider, 'innerAuthorizationUrl');
           if (url && !!result.data.accessToken) {
-              const headers = _.get(provider, 'innerAuthorization.headers');
-              const method = _.get(provider, 'innerAuthorization.method');
-              return getInnerAuthorizationResponse(url, result.data.accessToken, headers, method)
-                  .then((isOkStatus) => {
-                      if (!isOkStatus) {
-                          console.warn(
-                            'The access token is invalid - removing access token in a related datastore row'
-                          );
-                          const removeCredentials = _.get(provider, 'innerAuthorization.removeCredentials', true);
-                          const replaceableToken = removeCredentials ?
-                              emptyTokenWithErrorCode(ERROR_CODES.INNER_AUTHORIZATION_FAILED.code) :
-                              oldTokenWithErrorCode(result.data, ERROR_CODES.INNER_AUTHORIZATION_FAILED.code);
-                          accessTokensTable.editRow(storageTokenInfo.externalId, replaceableToken);
-                          return res.status(204).send(ERROR_CODES.INNER_AUTHORIZATION_FAILED);
-                      } else {
-                        console.log('Access token is valid - proceeding.');
-                        return getStandardAuthorizationResponse(res, result, accessTokensTable, storageTokenInfo);
-                      }
-                  });
+            const headers = _.get(provider, 'innerAuthorization.headers');
+            const method = _.get(provider, 'innerAuthorization.method');
+            return getInnerAuthorizationResponse(url, result.data.accessToken, headers, method)
+              .then((isOkStatus) => {
+                if (!isOkStatus) {
+                  console.warn('The access token is invalid');
+                  const removeCredentials = _.get(provider, 'innerAuthorization.removeCredentials', true);
+                  if (removeCredentials) {
+                    const replaceableToken = emptyTokenWithErrorCode(ERROR_CODES.INNER_AUTHORIZATION_FAILED.code);
+                    accessTokensTable.editRow(storageTokenInfo.externalId, replaceableToken);
+                    console.log('Invalid token removed and returning empty token.');
+                    return res.status(204).send(ERROR_CODES.INNER_AUTHORIZATION_FAILED);
+                  }
+                  const replaceableToken = oldTokenWithErrorCode(result.data, ERROR_CODES.INNER_AUTHORIZATION_FAILED.code);
+                  accessTokensTable.editRow(storageTokenInfo.externalId, replaceableToken);
+                  console.log('Returning the invalid token.');
+                  return getStandardAuthorizationResponse(res, result, accessTokensTable, storageTokenInfo);
+                } else {
+                  console.log('Access token is valid - proceeding.');
+                  return getStandardAuthorizationResponse(res, result, accessTokensTable, storageTokenInfo);
+                }
+              });
           }
           return getStandardAuthorizationResponse(res, result, accessTokensTable, storageTokenInfo);
         })
