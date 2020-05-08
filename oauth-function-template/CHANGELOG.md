@@ -12,4 +12,8 @@ Release 1.6.2
   
 Release 1.7.0
 - Changes
-   - Add optional headers and method to inner Authorization
+  - Add optional headers and method to inner Authorization
+
+Release 1.7.1
+- Changes
+  - Fixed setting up a token when removing credentials
