@@ -17,3 +17,7 @@ Release 1.7.0
 Release 1.7.1
 - Changes
   - Fixed setting up a token when removing credentials
+  
+Release 1.7.2
+- Changes
+    - Fixed yargs-parser vulnerability
