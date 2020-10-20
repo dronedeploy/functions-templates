@@ -20,4 +20,4 @@ Release 1.7.1
   
 Release 1.7.2
 - Changes
-    - Fixed yargs-parser vulnerability
+   - Upgrade convict to 6.0.0
